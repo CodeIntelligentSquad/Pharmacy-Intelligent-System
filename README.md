@@ -7,18 +7,19 @@ The Pharmacy Intelligent System is a comprehensive application designed for hosp
 1. **Pharmacist Login and Dashboard**
    - Secure login with authentication against a MySQL database.
    - Personalized dashboard displaying pharmacist-specific functionalities.
-
+   - Contain all patient data and analysis for this data 
 2. **Inventory Management**
    - View, search, and edit drug inventory.
    - Add new drugs with specified quantity and dosage.
 
 3. **Order Management**
    - View orders placed by patients.
-   - Mark orders as "Taken" upon fulfillment.
-
+   - Mark orders as "Taken" upon fulfillment and also check for paid or not paid to check the medicine.
+   
 4. **Interactive Chatbot**
    - Responds to natural language queries related to pharmacy database information.
-   - Supports text input and speech recognition for user convenience.
+   - Supports text input and speech recognition for user convenience and used to make data analysis.
+   - Have full control on the system .
 
 ### Technologies Used
 
