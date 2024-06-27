@@ -366,22 +366,41 @@ def add_drug_page():
     drug_name = st.text_input("Drug Name")
     quantity = st.text_input("Quantity")
     dose = st.text_input("Dose")
+    expiration_day = st.text_input("Expiration Day (YY-MM-DD)")
+    manufacturer = st.text_input("Manufacturer")
+    active_ingredients = st.text_input("Active Ingredients (comma-separated)")
 
     if st.button("Add Drug"):
-        add_drug(drug_name, quantity, dose)
+        active_ingredients_list = [ing.strip() for ing in active_ingredients.split(',') if ing.strip()]
+        add_drug(drug_name, quantity, dose, expiration_day, manufacturer, active_ingredients_list)
 
-def add_drug(name, quantity, dose):
+
+def add_drug(name, quantity, dose, expiration_day, manufacturer, active_ingredients):
     conn = connect_to_db()
     if conn:
         try:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO drugs (Drug_Name, Quantity, Dose) VALUES (%s, %s, %s)", (name, quantity, dose))
+            # Insert drug details into drugs table
+            cursor.execute("INSERT INTO drugs (Drug_Name, Quantity, Dose, Expiration_date, Manufacturer) VALUES (%s, %s, %s, %s, %s)",
+                           (name, quantity, dose, expiration_day, manufacturer))
             conn.commit()
+
+            # Retrieve the last inserted Drug_ID
+            cursor.execute("SELECT LAST_INSERT_ID()")
+            drug_id = cursor.fetchone()[0]
+
+            # Insert active ingredients into drug_active_ingredients table
+            for ingredient in active_ingredients:
+                cursor.execute("INSERT INTO active_ingredients (Drug_ID, Active_ingredient) VALUES (%s, %s)",
+                               (drug_id, ingredient))
+            conn.commit()
+
             st.success(f"Drug {name} added successfully.")
         except Error as e:
             st.error(f"Database Error: {str(e)}")
         finally:
             _ = conn.close()  # Suppress output by assigning to _
+
 
 def remove_drug_by_id(drug_id):
     conn = connect_to_db()
