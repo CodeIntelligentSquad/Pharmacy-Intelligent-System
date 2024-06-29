@@ -10,6 +10,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
 import urllib.parse
 import speech_recognition as sr
+import numpy as np
 # Function to connect to the database
 st.set_page_config(page_title="Chat with pharmacy pot", page_icon=":speech_balloon:")
 
@@ -307,11 +308,55 @@ def load_all_drugs():
     if conn:
         try:
             cursor = conn.cursor()
+            cursor.execute("SELECT drug_id, Expiration_date - CURRENT_DATE FROM drugs")
+            dates = cursor.fetchall()
+            _ = conn.close()  # Suppress output by assigning to _
+        except Error as e:
+            st.error(f"Database Error: {str(e)}")
+        ids,arr = zip(*dates)
+        ids = list(ids)
+        arr = list(arr)
+
+        if any(np.array(arr) <= 0):
+            for i, (val, id) in enumerate(zip(arr, ids)):
+                if val <= 0:
+                    st.error(f'The drug {id} is Expired')
+        if any(np.array(arr)<3):
+            for i, (val, id) in enumerate(zip(arr, ids)):
+                if val < 3 and val >= 0:
+                    st.warning(f'The drug {id} is about to Expire ')
+    
+    conn = connect_to_db()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT drug_id, Quantity FROM drugs")
+            quantity = cursor.fetchall()
+            _ = conn.close()  # Suppress output by assigning to _
+        except Error as e:
+            st.error(f"Database Error: {str(e)}")
+        ids,arr = zip(*quantity)
+        ids = list(ids)
+        arr = list(arr)
+
+        if any(np.array(arr) <= 0):
+            for i, (val, id) in enumerate(zip(arr, ids)):
+                if val <= 0:
+                    st.error(f'The drug {id} is sold out')
+        if any(np.array(arr)<=10):
+            for i, (val, id) in enumerate(zip(arr, ids)):
+                if val <= 10 and val >= 0:
+                    st.warning(f'The drug {id} is about to sell out ')
+                    
+    conn = connect_to_db()
+    if conn:
+        try:
+            cursor = conn.cursor()
             cursor.execute("SELECT drug_id, Drug_Name, Quantity, Dose FROM drugs")
             drugs = cursor.fetchall()
             for drug in drugs:
                 st.write(f"ID: {drug[0]}, Name: {drug[1]}, Quantity: {drug[2]}, Dose: {drug[3]}")
-                if st.button(f"Edit {drug[1]}"):
+                if st.button(f"Edit {drug[1]}", key=f"edit_{drug[0]}"):
                     open_edit_window(drug[0], drug[1], drug[2], drug[3])
             _ = conn.close()  # Suppress output by assigning to _
         except Error as e:
@@ -342,9 +387,11 @@ def open_edit_window(drug_id, drug_name, quantity, dose):
 
     if st.button("Save Changes"):
         save_drug_changes(drug_id, new_quantity, new_dose)
+        st.experimental_rerun()  # Refresh the page to reflect changes
 
-    if st.button("Delete Drug"):
+    if st.button("Delete Drug", key=f"delete_{drug_id}"):
         remove_drug_by_id(drug_id)
+        st.experimental_rerun()
 
 def save_drug_changes(drug_id, quantity, dose):
     conn = connect_to_db()
@@ -354,10 +401,10 @@ def save_drug_changes(drug_id, quantity, dose):
             cursor.execute("UPDATE drugs SET Quantity = %s, Dose = %s WHERE drug_id = %s", (quantity, dose, drug_id))
             conn.commit()
             st.success(f"Drug {drug_id} updated successfully.")
-        except Error as e:
+        except mysql.connector.Error as e:
             st.error(f"Database Error: {str(e)}")
         finally:
-            _ = conn.close()  # Suppress output by assigning to _
+            conn.close()
 
 # Add Drug Page
 def add_drug_page():
@@ -406,12 +453,13 @@ def remove_drug_by_id(drug_id):
         try:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM drugs WHERE drug_id = %s", (drug_id,))
+            cursor.execute("DELETE FROM active_ingredients WHERE drug_id = %s", (drug_id,))
             conn.commit()
             st.success(f"Drug ID {drug_id} removed successfully.")
-        except Error as e:
+        except mysql.connector.Error as e:
             st.error(f"Database Error: {str(e)}")
         finally:
-            _ = conn.close()  # Suppress output by assigning to _
+            conn.close()
 
 # View Orders
 def view_orders():
