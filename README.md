@@ -34,3 +34,6 @@ The Pharmacy Intelligent System is a comprehensive application designed for hosp
    ```bash
    git clone <repository_url>
    cd pharmacy-intelligent-system
+
+### The Publication
+(our paper link on IEEE Xplore)[https://ieeexplore.ieee.org/abstract/document/10857582]
